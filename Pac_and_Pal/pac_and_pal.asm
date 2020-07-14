@@ -34,7 +34,7 @@ init_sprites:
 
     ; Pac-Man sprite
     mov     r0,#vdc_spr0_shape         
-    mov     r1,#pacman_right & 0ffh    
+    mov     r1,#pacman_closed & 0ffh    
     mov     r7,#8
     call    copy_sprite
     mov     r0,#000h                    ; y position set
@@ -43,7 +43,7 @@ init_sprites:
     movx    @r0,a
     mov     r0,#001h                    ; x position set
     movx    a,@r0 
-    mov     a,#70
+    mov     a,#75
     movx    @r0,a
     mov     r0,#002h                    ; color
     movx    a,@r0
@@ -52,7 +52,7 @@ init_sprites:
 
     ; Ghost Sprite 1
     mov     r0,#vdc_spr1_shape         
-    mov     r1,#ghost & 0ffh    
+    mov     r1,#ghost_left & 0ffh    
     mov     r7,#8
     call    copy_sprite
     mov     r0,#004h                    ; y position set
@@ -70,7 +70,7 @@ init_sprites:
 
     ; Ghost Sprite 2
     mov     r0,#vdc_spr2_shape         
-    mov     r1,#ghost & 0ffh    
+    mov     r1,#ghost_right & 0ffh    
     mov     r7,#8
     call    copy_sprite
     mov     r0,#008h                    ; y position set
@@ -84,6 +84,24 @@ init_sprites:
     mov     r0,#00Ah                    ; color
     movx    a,@r0
     mov     a,#col_spr_blue
+    movx    @r0,a 
+
+     ; Miru Sprite
+    mov     r0,#vdc_spr3_shape         
+    mov     r1,#miru_right & 0ffh    
+    mov     r7,#8
+    call    copy_sprite
+    mov     r0,#00Ch                    ; y position set
+    movx    a,@r0
+    mov     a,#70
+    movx    @r0,a
+    mov     r0,#00Dh                    ; x position set
+    movx    a,@r0 
+    mov     a,#75
+    movx    @r0,a
+    mov     r0,#00Eh                    ; color
+    movx    a,@r0
+    mov     a,#col_spr_green
     movx    @r0,a 
 
     ret
@@ -287,6 +305,70 @@ init_grid:
 
 
 ; All sprites designed with assumption that will be flipped on Y-axis
+ghost_left:
+	db	01111110b
+	db	10011001b
+	db	10111011b
+	db	10011001b
+	db	11111111b
+	db	11111111b
+	db	11111111b
+	db	10101010b
+
+ghost_right:
+	db	01111110b
+	db	10011001b
+	db	11011101b
+	db	10011001b
+	db	11111111b
+	db	11111111b
+	db	11111111b
+	db	01010101b
+
+; right bow
+miru_left:
+	db	00100000b
+    db  01011100b
+    db  00111110b
+    db  01110101b
+    db  01111111b
+    db  00111110b
+    db  00011100b
+    db  00000000b
+
+;  left bow
+miru_right:
+	db	00000100b
+    db  00111010b
+    db  01111100b
+    db  10101110b
+    db  11111110b
+    db  01111100b
+    db  00111000b
+    db  00000000b
+
+; left bow
+miru_up:
+	db	00000100b
+    db  00111010b
+    db  01010100b
+    db  11111110b
+    db  11111110b
+    db  01111100b
+    db  00111000b
+    db  00000000b
+
+; right bow
+miru_down:
+	db	00100000b
+    db  01011100b
+    db  00111110b
+    db  01111111b
+    db  01101011b
+    db  00111110b
+    db  00011100b
+    db  00000000b
+
 pacman_closed:
  	db	00011000b
 	db	00111100b
@@ -315,14 +397,24 @@ pacman_right:
 	db	00001110b
 	db	00111100b
 	db	01111000b
-	db	00000000b  
-	
-ghost:
+	db	00000000b 
+
+pacman_up:
+ 	db	11000011b
+	db	11000011b
+	db	11100111b
+	db	11100111b
 	db	01111110b
-	db	10011001b
-	db	10111011b
-	db	10011001b
-	db	11111111b
-	db	11111111b
-	db	11111111b
-	db	10101010b
+	db	01111110b
+	db	00111100b
+	db	00000000b
+
+pacman_down:
+    db  00111100b
+    db  01111110b
+    db  01111110b
+    db  11100111b
+    db  11100111b
+    db  11000011b
+    db  11000011b
+	db	00000000b
