@@ -112,75 +112,123 @@ game_loop:
 
     ; Advance one frame
     call    gfxon
-    call    waitvsync 
+    call    waitvsync            
     call    gfxoff
+
+    call    move_player
+    ; Check for collision on next frame
+    call    pacman_col_check
+
+    jmp game_loop
+
+; Calls movement routines
+; Movement routines check for collisions before movement
+move_player:
+    
+    ; Save old position
+    mov     r1,#000h
+    mov     a,@r1
+    mov     r4,a
+    mov     r1,#001h
+    mov     a,@r1
+    mov     r5,a
 
     ; Get joystick 0 movement
     mov     r1,#000h            ; select joystick 0
     call    getjoystick
     mov     a,r1 
     cpl     a 
-    mov     r0,a                ; save joystick bits
-    
-    call    move_player         ; routine that tests move bits
+    mov     r2,a                ; save joystick bits
 
-    jmp game_loop
-
-
-; Determines which direction player moved and calls movement routine
-move_player:
-    
     ; Joystick bits in BIOS 0 = Up, 1 = Right, 2 = Down, 3 = Left, 4 = Fire
     ; "stored movement" AND with BIOS value to determine which bit set
-    mov     a,r0
+    mov     a,r2
     anl     a,#001h
     jnz     move_up
 
-    mov     a,r0 
+    mov     a,r2 
     anl     a,#002h             
     jnz     move_right
 
-    mov     a,r0
+    mov     a,r2
     anl     a,#004h
     jnz     move_down
 
-    mov     a,r0
+    mov     a,r2
     anl     a,#008h
     jnz     move_left
 
     ret
 
 move_up:
-    mov     r0,#000h
-    movx    a,@r0 
-    add     a,#0ffh 
-    movx    @r0,a
+
+    ; Move sprite
+    mov     r1,#000h
+    movx    a,@r1
+    add     a,#0ffh
+    movx    @r1,a
 
     jmp game_loop
 
 move_down:
-    mov     r0,#000h
-    movx    a,@r0 
+
+    ; Move sprite
+    mov     r1,#000h
+    movx    a,@r1 
     add     a,#001h 
-    movx    @r0,a
+    movx    @r1,a
 
     jmp game_loop
 
 move_left:
-    mov     r0,#001h
-    movx    a,@r0 
+
+    ; Move sprite
+    mov     r1,#001h
+    movx    a,@r1 
     add     a,#0ffh 
-    movx    @r0,a
+    movx    @r1,a
 
     jmp game_loop
 
 move_right:
-    mov     r0,#001h
-    movx    a,@r0 
+
+    ; Move sprite
+    mov     r1,#001h
+    movx    a,@r1 
     add     a,#001h 
-    movx    @r0,a
+    movx    @r1,a
 
     jmp game_loop
+
+; If movement would push into grid, restart gameloop
+; Still need to add checks for if hit ghost, miru, etc.
+pacman_col_check: 
+
+    ; activate collision detection for sprite 0
+    call    gfxon
+    mov     r0,#vdc_collision
+    mov     a,#vdc_coll_spr0
+    movx    @r0,a 
+    call    waitvsync
+    call    gfxoff
+
+    ; Check for collision of player with grid
+    mov     r0,#iram_collision
+    mov     a,@r0
+    anl     a,#00110000b
+    jz      game_loop
+
+    ; Move sprite
+    mov     r1,#000h
+    mov     a,r4 
+    movx    @r1,a
+    mov     r1,#001h
+    mov     a,r5 
+    movx    @r1,a
+
+
+    ret
+    
 
 ; ***NEW PAGE***
 ; Start of new 256 byte page
