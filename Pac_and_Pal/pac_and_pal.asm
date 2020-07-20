@@ -23,7 +23,6 @@ main:
     call    init_sprites                ; create sprites
     call    game_loop                   ; main game loop
 
-
 ; Initializes sprite VDCs and copies onto screen
 init_sprites:
     
@@ -32,7 +31,7 @@ init_sprites:
     ; Sprite 2 Control $08-$0B
     ; Sprite 3 Control $0C-$0F
 
-    ; Pac-Man sprite
+    ; Pac-Man Sprite
     mov     r0,#vdc_spr0_shape         
     mov     r1,#pacman_closed & 0ffh    
     mov     r7,#8
@@ -86,7 +85,7 @@ init_sprites:
     mov     a,#col_spr_blue
     movx    @r0,a 
 
-     ; Miru Sprite
+    ; Miru Sprite
     mov     r0,#vdc_spr3_shape         
     mov     r1,#miru_right & 0ffh    
     mov     r7,#8
@@ -106,60 +105,68 @@ init_sprites:
 
     ret
 
-
+    
 ; Loop that runs for every game frame
 game_loop:
+    
+    ; Activate collision check for pac-man sprite on next frame
+    mov     r0,#vdc_collision
+    mov     a,#vdc_coll_spr0
+    movx    @r0,a 
 
     ; Advance one frame
     call    gfxon
     call    waitvsync            
     call    gfxoff
 
+    ; Check collision and move sprite back if collided
+    call    pacman_grid_col_check
+    ; Read joystick and move
     call    move_player
-    ; Check for collision on next frame
-    call    pacman_col_check
 
     jmp game_loop
 
-; Calls movement routines
-; Movement routines check for collisions before movement
+
+; Calls movement routines for player
 move_player:
-    
-    ; Save old position
-    mov     r1,#000h
-    mov     a,@r1
-    mov     r4,a
-    mov     r1,#001h
-    mov     a,@r1
-    mov     r5,a
 
     ; Get joystick 0 movement
-    mov     r1,#000h            ; select joystick 0
+    mov     r1,#000h                    ; select joystick 0
     call    getjoystick
     mov     a,r1 
     cpl     a 
-    mov     r2,a                ; save joystick bits
+    mov     r1,a                        ; save joystick bits
+
+    ; Store initial X and Y values
+    mov     r0,#000h                    ; y position 
+    movx    a,@r0
+    mov     r2,a
+    mov     r0,#001h                    ; x position  
+    movx    a,@r0
+    mov     r3,a  
 
     ; Joystick bits in BIOS 0 = Up, 1 = Right, 2 = Down, 3 = Left, 4 = Fire
     ; "stored movement" AND with BIOS value to determine which bit set
-    mov     a,r2
+    mov     a,r1
     anl     a,#001h
     jnz     move_up
 
-    mov     a,r2 
+    mov     a,r1 
     anl     a,#002h             
     jnz     move_right
 
-    mov     a,r2
+    mov     a,r1
     anl     a,#004h
     jnz     move_down
 
-    mov     a,r2
+    mov     a,r1
     anl     a,#008h
     jnz     move_left
 
     ret
 
+
+; Move player sprite up
 move_up:
 
     ; Move sprite
@@ -168,8 +175,10 @@ move_up:
     add     a,#0ffh
     movx    @r1,a
 
-    jmp game_loop
+    jmp     game_loop
 
+
+; Move player sprite down
 move_down:
 
     ; Move sprite
@@ -178,8 +187,10 @@ move_down:
     add     a,#001h 
     movx    @r1,a
 
-    jmp game_loop
+    jmp     game_loop
 
+
+; Move player sprite left
 move_left:
 
     ; Move sprite
@@ -188,8 +199,10 @@ move_left:
     add     a,#0ffh 
     movx    @r1,a
 
-    jmp game_loop
+    jmp     game_loop
 
+
+; Move player sprite right
 move_right:
 
     ; Move sprite
@@ -198,41 +211,37 @@ move_right:
     add     a,#001h 
     movx    @r1,a
 
-    jmp game_loop
+    jmp     game_loop
 
-; If movement would push into grid, restart gameloop
-; Still need to add checks for if hit ghost, miru, etc.
-pacman_col_check: 
 
-    ; activate collision detection for sprite 0
-    call    gfxon
-    mov     r0,#vdc_collision
-    mov     a,#vdc_coll_spr0
-    movx    @r0,a 
-    call    waitvsync
-    call    gfxoff
+; Checks if pac-man is colliding with grid
+; If collision, move back to pre-movement position
+pacman_grid_col_check: 
 
     ; Check for collision of player with grid
+    ; Bit 5 is horizontal, bit 4 is vertical
     mov     r0,#iram_collision
     mov     a,@r0
     anl     a,#00110000b
-    jz      game_loop
-
-    ; Move sprite
-    mov     r1,#000h
-    mov     a,r4 
-    movx    @r1,a
-    mov     r1,#001h
-    mov     a,r5 
-    movx    @r1,a
-
+    jnz     pacman_col_grid
 
     ret
-    
+
+; Moves pac-man back if collide with grid     
+pacman_col_grid:
+
+    mov     r0,#000h
+    mov     a,r2 
+    movx    @r0,a  
+    mov     r0,#001h
+    mov     a,r3    
+    movx    @r0,a
+
+    jmp     game_loop    
+
 
 ; ***NEW PAGE***
-; Start of new 256 byte page
-; Need sprites and code that accesses them stay together
+; Need sprites and copy sprite that accesses them on same page
     align   256
 
 ; Copies sprite data into VDC
@@ -245,7 +254,6 @@ copy_sprite:
     djnz    r7,copy_sprite
 
     ret
-
 
 ; Initialize grid at start of game
 ; Note: bit 7 = bottom of grid
@@ -360,7 +368,7 @@ ghost_left:
 	db	10011001b
 	db	11111111b
 	db	11111111b
-	db	11111111b
+    db	11111111b
 	db	10101010b
 
 ghost_right:
@@ -370,7 +378,7 @@ ghost_right:
 	db	10011001b
 	db	11111111b
 	db	11111111b
-	db	11111111b
+    db	11111111b
 	db	01010101b
 
 ; right bow
