@@ -10,6 +10,13 @@
 	jmp     main					    ; start main program
 	jmp     soundirq				    ; sound-interrupt
 
+; Internal RAM variables
+iram_score_start        equ     020h    ; First 8 bits of score
+iram_score_end          equ     021h    ; Second 8 bits of score
+
+; Page 1 - Initialization routines (except grid) and main loop
+    align   256
+
 
 ; Timer not used
 timer:
@@ -21,7 +28,9 @@ main:
     call    gfxoff                      ; turn off graphics while editing vdc
     call    init_grid                   ; create maze
     call    init_sprites                ; create sprites
+    call    init_score
     call    game_loop                   ; main game loop
+
 
 ; Initializes sprite VDCs and copies onto screen
 init_sprites:
@@ -105,7 +114,54 @@ init_sprites:
 
     ret
 
+; Score functionality is modeled after gertk's Omega Race code
+init_score:
+		
+	mov	r4,#12		            ; Quad 0 and Quad 1 y position
+
+    ; Quad 0 is $40-4F
+    mov	r3,#10		            ; Quad 0 x position
+	mov	    r0,#vdc_quad0
+	call	set_quad_char
+	mov	    r0,#044h
+	call	set_quad_char
+	mov	    r0,#048h
+	call	set_quad_char
+	mov	    r0,#044h
+	call	set_quad_char
+
+    ; Quad 1 is $40-4F
+	mov	    r3,#18		        ; Quad 1 x position
+	mov	    r0,#vdc_quad1
+	call	set_quad_char
+	mov	    r0,#054h
+	call	set_quad_char
+	mov	    r0,#058h
+	call	set_quad_char
+	mov	    r0,#05Ch
+	call	set_quad_char
+
+    ret
+
+; Moves quad char positions into VDC
+set_quad_char:
+	; Set Y Position
+    mov	    a,r4
+	movx	@r0,a	
+    ; Set X Position	
+	inc	    r0
+	mov	    a,r3
+	movx	@r0,a
+    ; Set character
+    mov     a,#00h
+    movp    a,@a 
+    call    printchar
+    movx    @r0,a
     
+    ret  
+
+; Page 2
+    align 256
 ; Loop that runs for every game frame
 game_loop:
     
@@ -244,17 +300,6 @@ pacman_col_grid:
 ; Need sprites and copy sprite that accesses them on same page
     align   256
 
-; Copies sprite data into VDC
-copy_sprite:
-    mov     a,r1 
-    movp    a,@a
-    movx    @r0,a 
-    inc     r0
-    inc     r1 
-    djnz    r7,copy_sprite
-
-    ret
-
 ; Initialize grid at start of game
 ; Note: bit 7 = bottom of grid
 init_grid:
@@ -359,6 +404,16 @@ init_grid:
 
     ret
 
+; Copies sprite data into VDC
+copy_sprite:
+    mov     a,r1 
+    movp    a,@a
+    movx    @r0,a 
+    inc     r0
+    inc     r1 
+    djnz    r7,copy_sprite
+
+    ret
 
 ; All sprites designed with assumption that will be flipped on Y-axis
 ghost_left:
